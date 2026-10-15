@@ -1,8 +1,37 @@
 # Jacquard Mac Jacket Dodger
 
+## What Jacquard set out to do
+
+Jacquard came out of Google's ATAP research group and was unveiled at Google I/O in 2015, led by interaction designer Ivan Poupyrev. The starting idea was that a woven textile has the same grid structure as a touchscreen. If some of the threads are replaced with conductive yarn, the fabric can sense simple touch gestures ([Dezeen](https://www.dezeen.com/2015/06/03/google-smartphone-interfaces-conductive-threads-clothes-textiles-project-jacquard/)).
+
+The goals, as the team described them in interviews and talks:
+
+- **Make it real at industrial scale.** Poupyrev said the aim was to ["move beyond novelty"](https://techcrunch.com/2015/05/29/google-ataps-project-jacquard-wants-to-weave-sensors-into-your-clothes). The team built a conductive yarn that survives standard industrial looms and comes in any color, so the apparel industry would not have to change how it works ([TechCrunch](https://techcrunch.com/2015/05/29/google-ataps-project-jacquard-wants-to-weave-sensors-into-your-clothes), [Fast Company](https://www.fastcompany.com/3046864/meet-project-jacquard-googles-plan-to-turn-all-your-clothes-into-a-touchscreen)).
+- **Only part of a garment needs to be smart.** A small woven patch, such as a cuff, is enough. The point was never to turn a whole garment into a touchscreen ([Fast Company](https://www.fastcompany.com/3046864/meet-project-jacquard-googles-plan-to-turn-all-your-clothes-into-a-touchscreen)).
+- **A material for designers, not a gadget.** Google pitched Jacquard as a raw material that fashion and textile designers could use as part of their own language ([Engadget](https://www.engadget.com/2015-05-29-googles-first-partner-for-touch-sensitive-clothes-is-levis.html)). For the Levi's jacket, Poupyrev described the goal as ["a garment, not a gadget"](https://www.ideo.com/case-study/designing-the-levis-commuter-trucker-jacket-with-jacquard-by-google).
+- **Ambient computing.** By 2019 Google framed Jacquard as easy access to digital functions through ordinary everyday things, with a small removable tag carrying the electronics ([Google blog](https://blog.google/products-and-platforms/products/atap/smarter-wardrobe-jacquard-google/)).
+
+How it played out:
+
+- **2015:** announced at Google I/O, with Levi's as the first partner ([Engadget](https://www.engadget.com/2015-05-29-googles-first-partner-for-touch-sensitive-clothes-is-levis.html)).
+- **2017:** the Levi's Commuter Trucker Jacket, the first product ([Fast Company](https://www.fastcompany.co.za/)).
+- **2019:** the second-generation Jacquard Tag, smaller than a stick of gum with up to two weeks of battery life, used in Levi's and Saint Laurent products ([Google blog](https://blog.google/products-and-platforms/products/atap/smarter-wardrobe-jacquard-google/)).
+- **2020:** the Adidas GMR insole, built on the same second-generation tag and aimed at soccer ([9to5Google](https://9to5google.com/2020/03/10/adidas-gmr-jacquard-launch/)).
+- **2021:** a public SDK for developers ([9to5Google](https://9to5google.com/2021/10/28/jacquard-sdk-allows-developers-to-make-their-own-smart-fabric-apps/)).
+- **April 2023:** Google ended support for the Jacquard app ([9to5Google](https://9to5google.com/2023/03/28/google-shutting-down-jacquard-app/)).
+- **April 2026:** Google archived the SDK repo this project is based on.
+
+This project is a small test of what is left: one of those tags, in a garment it was not sold for, working over Bluetooth with no official app.
+
+## About this project
+
 An experiment in running an **Adidas GMR Jacquard tag inside a Levi's Trucker jacket**, driven from a **Mac** with Google's Jacquard iOS SDK, plus a small gesture-controlled game used to test how sensitive the gestures are and to learn what the tag actually reports.
 
 Google's Jacquard app was shut down in April 2023 ([9to5Google](https://9to5google.com/2023/03/28/google-shutting-down-jacquard-app/)), so the jacket has no official software today. This repo shows that the open-source SDK can still talk to the tag directly over Bluetooth.
+
+This application is written through the harness [Krystalize.AI](https://krystalize.ai/) - get your Mac M series private local LLM with memory for managing all of your development processes or as a local Chief of Staff.
+
+Written by @GGDM on Krystalize.AI local harness.
 
 ## What was tested
 
