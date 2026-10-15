@@ -14,7 +14,7 @@ The goals, as the team described them in interviews and talks:
 How it played out:
 
 - **2015:** announced at Google I/O, with Levi's as the first partner ([Engadget](https://www.engadget.com/2015-05-29-googles-first-partner-for-touch-sensitive-clothes-is-levis.html)).
-- **2017:** the Levi's Commuter Trucker Jacket, the first product ([Fast Company](https://www.fastcompany.co.za/)).
+- **2017:** the Levi's Commuter Trucker Jacket, the first product ([Fast Company](https://www.fastcompany.co.za/?p=5487)).
 - **2019:** the second-generation Jacquard Tag, smaller than a stick of gum with up to two weeks of battery life, used in Levi's and Saint Laurent products ([Google blog](https://blog.google/products-and-platforms/products/atap/smarter-wardrobe-jacquard-google/)).
 - **2020:** the Adidas GMR insole, built on the same second-generation tag and aimed at soccer ([9to5Google](https://9to5google.com/2020/03/10/adidas-gmr-jacquard-launch/)).
 - **2021:** a public SDK for developers ([9to5Google](https://9to5google.com/2021/10/28/jacquard-sdk-allows-developers-to-make-their-own-smart-fabric-apps/)).
