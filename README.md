@@ -1,106 +1,59 @@
-# Jacquard iOS SDK
+# Jacquard Mac Jacket Dodger
 
-Jacquard™ by Google weaves new digital experiences into the things you
-love, wear, and use every day to give you the power to do more and be
-more.  Jacquard SDK is a way to connect Jacquard interactions within
-your apps.  Create an app and bring it to life with swipes and taps
-through the Jacquard SDK.
+An experiment in running an **Adidas GMR Jacquard tag inside a Levi's Trucker jacket**, driven from a **Mac** with Google's Jacquard iOS SDK, plus a small gesture-controlled game used to test how sensitive the gestures are and to learn what the tag actually reports.
 
-# What do I need to get started?
+Google's Jacquard app was shut down in April 2023 ([9to5Google](https://9to5google.com/2023/03/28/google-shutting-down-jacquard-app/)), so the jacket has no official software today. This repo shows that the open-source SDK can still talk to the tag directly over Bluetooth.
 
-The iOS Jacquard SDK supports iOS versions 13 and greater.
+## What was tested
 
-You will need the Jacquard Tag with a supported Jacquard product (all
-come with one tag). Currently supported products are:
+- One Adidas GMR tag (Google's second-generation Jacquard tag, per [9to5Google](https://9to5google.com/2020/03/10/adidas-gmr-jacquard-launch/)) in one Levi's Trucker jacket with Jacquard, slide-in tag version.
+- A MacBook Pro (Apple silicon), macOS 15, Xcode 26.3. No iPhone involved.
 
-* Levi's Trucker Jacket
-* Samsonite Konnect-i backpack
-* Saint Laurent Cit-e Backpack
+## What worked (observed on that one setup)
 
-You can find links to purchase these products on the [Google Jacquard
-website](https://atap.google.com/jacquard/products/).
+- The Mac connects to the tag over Bluetooth, and the tag reports the jacket as attached. Its vendor and product IDs match the SDK's Levi's Trucker Jacket entry.
+- Brush In, Brush Out and Cover arrive as the SDK documents.
+- **Double Tap arrives as raw event 8**, not event 1 as the SDK's `Gesture` enum expects. The SDK silently drops unknown events, so out of the box a double tap looks like nothing happened. The sample app here maps 8 to Double Tap. This mapping comes from observation, not documentation.
+- Brush Up and Brush Down were not observed during testing. That does not mean they are unsupported.
 
-> If you have just opened a new retail Jacquard product, your tag
-> probably needs a firmware update (and perhaps charging). Review the
-> steps in the [Updating Firmware](updating-firmware.html) page.
+## What did not work, and the workaround
 
-# Join the Jacquard community!
+- The tag in testing reported firmware 1.0.6, which the SDK treats as a flagged ("bad") version. On connect, the SDK then forces a firmware check against Google's cloud. That needs a Jacquard API key, and the Jacquard product is end of life, so no key could be obtained. The check failed and the SDK disconnected in a loop.
+- This repo changes the SDK so that a failed cloud check logs a warning and the connection proceeds. The tag's firmware is not changed. The SDK does not say why 1.0.6 is flagged, so there may be problems we did not hit. **Use at your own risk.**
+- Firmware updates, the IMU/motion features, and an iPhone app were **not** tested.
 
-Join the [Jacquard iOS SDK
-discussion](https://github.com/google/JacquardSDKiOS/discussions/) on
-GitHub.
+## Run it
 
-Learn more about Google Jaquard and sign up for Jacquard updates at
-the [Jacquard by Google website](https://atap.google.com/jacquard/).
+Requirements: a Mac with Bluetooth, Xcode, a Jacquard tag in a supported garment, and the tag **not** paired to another app (a tag talks to one app at a time).
 
-## Sample App
-
-To run the example project, clone the repo, and run `pod install` from
-the Example directory first. For more detailed instructions, see the
-full documentation at https://google.github.io/JacquardSDKiOS
-
-## Documentation & Tutorial
-
-Full documentation including a tutorial is available at
-https://google.github.io/JacquardSDKiOS
-
-## Android SDK
-
-There is an Android equivalent to this SDK available at
-https://github.com/google/JacquardSDKAndroid
-
-
-
-# Integrate JacquardSDK into your Xcode project
-
-## CocoaPods
-
-JacquardSDK can be integrated into your code using
-[CocoaPods](https://cocoapods.org) dependency management. This early
-release version has not yet been added to the CocoaPods directory, the
-best way to integrate it is using a git url. Simply add the following
-line to your `Podfile`:
-
-```ruby
-pod 'JacquardSDK'
+```sh
+cd Apps/MacOSSample
+xcodebuild -project MacOSSample.xcodeproj -scheme MacOSSample \
+  -destination 'platform=macOS' -derivedDataPath build \
+  CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO build
+open build/Build/Products/Debug/MacOSSample.app
 ```
 
-## Swift Package Manager - with Xcode project
+Allow the Bluetooth prompt, wake the tag (tap it, or put it briefly on a charger), then Start Scanning and Connect. No API key is needed for connecting, gestures, LED or haptics; firmware updates need a key that is no longer obtainable.
 
-If you are using the Swift Package Manager with an Xcode project file,
-for xcode 13, navigate to your project settings, where you will see a new menu called Package Dependencies.
-Click the + button to add JacquardSDK package.
+## What the Mac app adds
 
-Enter the repository URL
-`https://github.com/google/JacquardSDKiOS.git`.
+- **Events list** (newest first) with raw event numbers and timestamps. Event numbers the SDK has no name for show up as "Unknown event N" instead of disappearing.
+- **Raw touch mode**: live bars for the 12 sensor lines, a threshold slider, and a software tap / double tap detector. The detector rules (touch under 0.3 s, little sideways movement, second tap within 0.5 s) are guesses and may need tuning.
+- **Jacket Dodger**, a three-lane dodger: Brush In/Out move left/right, Double Tap jumps, Cover raises a shield. Arrow keys, Space and S work from the keyboard. A toggle swaps left and right, because the physical direction of "in" is not documented.
 
-As soon as you enter the URL, xcode will find the `JacquardSDKiOS` package, 
-for the dependancy rule, use the default values : "Up to Next Major Version" and again click `Add Package`.
+## Changes from upstream
 
-Check the `JacquardSDK` Library and click `Add Package`.
+Based on [google/JacquardSDKiOS](https://github.com/google/JacquardSDKiOS) at commit `7db0fe2541c641d050584a6167b9ca977332d94e` (archived by Google in April 2026). Git history shows exactly what changed: the first commit is the unmodified upstream tree, and the second contains every change. Each modified source file carries a notice. In short:
 
-Xcode will now download all the relevant files and integrate them into your project.
+- SDK: failed firmware check no longer disconnects; `disconnect(_:)` no longer asserts when there is no active connection; new `RawInferenceNotificationSubscription`.
+- Mac sample: fixes for compile errors (switches that did not cover the SDK's newer firmware-update connection states) and a debug crash when disconnecting a tag with no live connection, plus the features above.
+- One hardcoded Google API key in an upstream test file was replaced with a placeholder.
 
-## Swift Package Manager - with Package.swift
+The original SDK README is kept as [README.SDK.md](README.SDK.md).
 
-If you are using the Swift Package Manager with a `Package.swift`
-file, you need to add a dependency to your and import the
-`JacquardSDK` library into the desired targets.
+## License and trademarks
 
-```swift
-dependencies: [
-    .package(name: "JacquardSDK", url: "https://github.com/google/JacquardSDKiOS.git", from: "0.2.0"),
-],
-targets: [
-    .target(name: "MyTarget", dependencies: ["JacquardSDK"]),
-]
-```
+Apache License 2.0, as in the original; see [LICENSE](LICENSE). Copyright 2021 Google LLC for the original SDK; modifications are provided under the same license.
 
-## Copyright
-
-Copyright 2021 Google LLC
-
-## License
-
-JacquardSDK is licensed under the Apache License, Version 2.0.
-See the LICENSE file for more info.
+This is an independent hobby project. It is not affiliated with or endorsed by Google, Levi Strauss & Co. or adidas. Jacquard, Levi's, adidas and GMR are trademarks of their respective owners.

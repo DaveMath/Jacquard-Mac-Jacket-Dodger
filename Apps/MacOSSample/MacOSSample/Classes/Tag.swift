@@ -11,11 +11,103 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// Modified in 2026 from the original Google release (google/JacquardSDKiOS @ 7db0fe2): event list, raw touch mode with a software tap/double tap detector, and gesture inputs for the game.
 
 import Combine
 import CoreBluetooth
 import JacquardSDK
 import SwiftUI
+
+
+/// Gesture inputs the game and UI care about.
+enum GameInput {
+  case brushIn, brushOut, doubleTap, cover
+}
+
+/// One row in the event list.
+struct TagEvent: Identifiable {
+  enum Kind { case gesture, unknown, software }
+  let id = UUID()
+  let time = Date()
+  let kind: Kind
+  let title: String
+  let detail: String?
+}
+
+/// Detects taps and double taps from raw 12-line touch data.
+struct TapDetector {
+  enum Result {
+    case none
+    case tap(duration: Double)
+    case doubleTap(gap: Double)
+  }
+
+  var threshold: UInt8 = 20
+
+  static let maxTapDuration = 0.30
+  static let maxDoubleTapGap = 0.50
+  static let maxCentroidDrift = 1.5
+  static let sampleGapTimeout = 0.40
+
+  private var touching = false
+  private var startTime = Date.distantPast
+  private var lastTouchedTime = Date.distantPast
+  private var startCentroid = 0.0
+  private var lastCentroid = 0.0
+  private var lastTapEnd: Date?
+
+  static func centroid(_ lines: [UInt8]) -> Double {
+    let total = lines.reduce(0.0) { $0 + Double($1) }
+    guard total > 0 else { return 0 }
+    let weighted = lines.enumerated().reduce(0.0) { $0 + Double($1.offset) * Double($1.element) }
+    return weighted / total
+  }
+
+  mutating func process(_ lines: [UInt8], now: Date = Date()) -> Result {
+    var result = Result.none
+
+    // If samples stopped arriving mid-touch, close that touch where it last registered.
+    if touching && now.timeIntervalSince(lastTouchedTime) > Self.sampleGapTimeout {
+      result = finish(at: lastTouchedTime)
+    }
+
+    let peak = lines.max() ?? 0
+    if peak >= threshold {
+      let centroid = Self.centroid(lines)
+      if !touching {
+        touching = true
+        startTime = now
+        startCentroid = centroid
+      }
+      lastCentroid = centroid
+      lastTouchedTime = now
+      return result
+    }
+
+    if touching {
+      let finished = finish(at: now)
+      if case .none = result { result = finished }
+    }
+    return result
+  }
+
+  private mutating func finish(at end: Date) -> Result {
+    touching = false
+    let duration = end.timeIntervalSince(startTime)
+    let drift = abs(lastCentroid - startCentroid)
+    guard duration <= Self.maxTapDuration, drift <= Self.maxCentroidDrift else {
+      lastTapEnd = nil
+      return .none
+    }
+    if let previous = lastTapEnd, startTime.timeIntervalSince(previous) <= Self.maxDoubleTapGap {
+      lastTapEnd = nil
+      return .doubleTap(gap: startTime.timeIntervalSince(previous))
+    }
+    lastTapEnd = end
+    return .tap(duration: duration)
+  }
+}
 
 /// Wraps a Jacquard `ConnectedTag` in a SwiftUI-friendly way.
 class Tag: ObservableBase {
@@ -30,8 +122,14 @@ class Tag: ObservableBase {
   private(set) var rssi: Float = 0
   private(set) var batteryStatus: BatteryStatus?
 
-  private(set) var gesturePublisher = Just<JacquardSDK.Gesture>(.brushIn)
-    .eraseToAnyPublisher()
+  /// Newest event first.
+  private(set) var events = [TagEvent]()
+  private(set) var touchMode: TouchMode = .gesture
+  private(set) var touchLines = [UInt8](repeating: 0, count: 12)
+  private(set) var touchProximity: UInt32 = 0
+  private(set) var touchThreshold: Double = 20
+  private var detector = TapDetector()
+  let gestureInputs = PassthroughSubject<GameInput, Never>()
 
   init(_ tag: ConnectedTag) {
     self.underlyingTag = tag
@@ -61,9 +159,111 @@ class Tag: ObservableBase {
         self?.batteryStatus = $0
       }
 
-      self.gesturePublisher =
-        subscribableTag
-        .subscribe(GestureNotificationSubscription())
+      bind(subscribableTag.subscribe(RawInferenceNotificationSubscription())) { [weak self] in
+        self?.handleInference($0)
+      }
+
+      bind(subscribableTag.subscribe(ContinuousTouchNotificationSubscription())) { [weak self] in
+        self?.handleTouch($0)
+      }
     }
+  }
+  // MARK: - Events and touch
+
+  private func addEvent(_ event: TagEvent) {
+    events.insert(event, at: 0)
+    if events.count > 300 { events.removeLast(events.count - 300) }
+  }
+
+  func clearEvents() {
+    objectWillChange.send()
+    events.removeAll()
+  }
+
+  private func handleInference(_ event: Int) {
+    let title: String
+    var input: GameInput?
+    var recognized = true
+    switch event {
+    case 1, 8:
+      // The SDK numbers double tap 1, but this tag sends 8 for it.
+      title = "Double Tap"
+      input = .doubleTap
+    case 2:
+      title = "Brush In"
+      input = .brushIn
+    case 3:
+      title = "Brush Out"
+      input = .brushOut
+    case 7:
+      title = "Cover"
+      input = .cover
+    default:
+      if let gesture = JacquardSDK.Gesture(rawValue: event) {
+        title = gesture.name
+      } else {
+        title = "Unknown event \(event)"
+        recognized = false
+      }
+    }
+    addEvent(
+      TagEvent(kind: recognized ? .gesture : .unknown, title: title, detail: "event \(event)"))
+    if let input = input { gestureInputs.send(input) }
+  }
+
+  private func handleTouch(_ data: TouchData) {
+    touchLines = data.linesArray
+    touchProximity = data.proximity
+    guard touchMode == .continuous else { return }
+    switch detector.process(touchLines) {
+    case .none:
+      break
+    case .tap(let duration):
+      addEvent(
+        TagEvent(
+          kind: .software, title: "Tap (software)", detail: "\(Int(duration * 1000)) ms"))
+    case .doubleTap(let gap):
+      addEvent(
+        TagEvent(
+          kind: .software, title: "Double Tap (software)", detail: "gap \(Int(gap * 1000)) ms"))
+      gestureInputs.send(.doubleTap)
+    }
+  }
+
+  func setTouchThreshold(_ value: Double) {
+    objectWillChange.send()
+    touchThreshold = value
+    detector.threshold = UInt8(max(1, min(127, value)))
+  }
+
+  func setTouchMode(_ mode: TouchMode) {
+    guard let gear = connectedGear else {
+      objectWillChange.send()
+      addEvent(TagEvent(kind: .unknown, title: "No gear attached", detail: nil))
+      return
+    }
+    underlyingTag.setTouchMode(mode, for: gear)
+      .sink(
+        receiveCompletion: { [weak self] completion in
+          guard let self = self else { return }
+          if case .failure(let error) = completion {
+            self.objectWillChange.send()
+            self.addEvent(
+              TagEvent(kind: .unknown, title: "Mode change failed", detail: "\(error)"))
+          }
+        },
+        receiveValue: { [weak self] _ in
+          guard let self = self else { return }
+          self.objectWillChange.send()
+          self.touchMode = mode
+          var fresh = TapDetector()
+          fresh.threshold = UInt8(max(1, min(127, self.touchThreshold)))
+          self.detector = fresh
+          self.addEvent(
+            TagEvent(
+              kind: .unknown, title: mode == .continuous ? "Raw touch mode on" : "Gesture mode on",
+              detail: nil))
+        }
+      ).addTo(&observations)
   }
 }

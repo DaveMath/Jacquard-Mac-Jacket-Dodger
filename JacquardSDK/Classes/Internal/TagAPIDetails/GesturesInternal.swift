@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// Modified in 2026 from the original Google release (google/JacquardSDKiOS @ 7db0fe2): adds extract(from:) for RawInferenceNotificationSubscription.
 
 extension GestureNotificationSubscription {
   /// :nodoc:
@@ -30,5 +32,21 @@ extension GestureNotificationSubscription {
     }
     return Gesture(
       notification.Google_Jacquard_Protocol_DataChannelNotification_data.inferenceData)
+  }
+}
+
+extension RawInferenceNotificationSubscription {
+  /// :nodoc:
+  public func extract(from outerProto: Any) -> Int? {
+    guard let notification = outerProto as? Google_Jacquard_Protocol_Notification else {
+      return nil
+    }
+    guard notification.hasGoogle_Jacquard_Protocol_DataChannelNotification_data,
+      notification.Google_Jacquard_Protocol_DataChannelNotification_data.hasInferenceData
+    else {
+      return nil
+    }
+    return Int(
+      notification.Google_Jacquard_Protocol_DataChannelNotification_data.inferenceData.event)
   }
 }

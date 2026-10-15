@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// Modified in 2026 from the original Google release (google/JacquardSDKiOS @ 7db0fe2): handles firmware-update connection states.
 
 import Combine
 import JacquardSDK
@@ -23,6 +25,10 @@ extension ConnectionState {
     case .connecting: return "Connecting…"
     case .initializing: return "Initializing…"
     case .configuring: return "Configuring…"
+    case .firmwareUpdateInitiated: return "Firmware update…"
+    case .firmwareTransferring: return "Transferring firmware…"
+    case .firmwareTransferCompleted: return "Firmware transferred"
+    case .firmwareExecuting: return "Installing firmware…"
     case .connected(let tag): return tag.displayName
     case .disconnected: return "Disconnected!"
     }

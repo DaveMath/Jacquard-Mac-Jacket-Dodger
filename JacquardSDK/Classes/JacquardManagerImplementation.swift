@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// Modified in 2026 from the original Google release (google/JacquardSDKiOS @ 7db0fe2): disconnect(_:) logs a warning instead of asserting when no connection exists.
 
 import Combine
 import CoreBluetooth
@@ -316,7 +318,7 @@ extension JacquardManagerImplementation: JacquardManager {
         identifier: peripheral.identifier
       )
     else {
-      jqLogger.preconditionAssertFailure("Failed to get connectionStateMachine instance.")
+      jqLogger.warning("No active connection for \(peripheral.identifier); nothing to disconnect.")
       return Empty<TagConnectionState, Never>(completeImmediately: true).eraseToAnyPublisher()
     }
 

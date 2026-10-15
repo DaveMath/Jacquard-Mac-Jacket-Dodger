@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// Modified in 2026 from the original Google release (google/JacquardSDKiOS @ 7db0fe2): a failed cloud firmware check no longer disconnects the tag.
 
 import Combine
 import Foundation
@@ -74,6 +76,7 @@ class TagConnectionStateMachine {
     case tagConfigured(ConnectedTag)
     case didDisconnect(Error?)
     case firmwareUpdateError(Error)
+    case firmwareCheckSkipped(ConnectedTag)
     case firmwareTransferring(Float)
     case firmwareTransferCompleted
     case firmwareExecuting
@@ -339,7 +342,13 @@ extension TagConnectionStateMachine {
       guard let self = self else { return }
       if case .failure(let error) = completion {
         self.marshalQueue.async {
-          self.handleEvent(.firmwareUpdateError(error))
+          if case FirmwareUpdateError.api = error {
+            jqLogger.warning(
+              "Firmware check failed (\(error)); tag is on a flagged firmware but connecting anyway.")
+            self.handleEvent(.firmwareCheckSkipped(tag))
+          } else {
+            self.handleEvent(.firmwareUpdateError(error))
+          }
         }
       }
     } receiveValue: { [weak self] updates in
@@ -455,6 +464,9 @@ extension TagConnectionStateMachine {
 
     case (.firmwareTransferCompleted, .firmwareExecuting):
       state = .firmwareExecuting
+
+    case (.firmwareUpdateInitiated, .firmwareCheckSkipped(let tag)):
+      state = .connected(tag)
 
     case (_, .firmwareUpdateError(let error)):
       state = .disconnected(error)

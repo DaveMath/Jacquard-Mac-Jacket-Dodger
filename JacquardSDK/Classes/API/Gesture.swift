@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// Modified in 2026 from the original Google release (google/JacquardSDKiOS @ 7db0fe2): adds RawInferenceNotificationSubscription (raw gesture event numbers).
 
 /// Notification to observe `Gesture` events.
 ///
@@ -74,4 +76,14 @@ extension Gesture {
     }
     self = inferenceID
   }
+}
+
+/// Notification publishing the raw inference event number for every gear data event, including
+/// event numbers that have no matching `Gesture` case.
+public struct RawInferenceNotificationSubscription: NotificationSubscription {
+  /// The raw event number reported by the tag.
+  public typealias Notification = Int
+
+  /// Initialize a subscription request.
+  public init() {}
 }
