@@ -130,6 +130,8 @@ class Tag: ObservableBase {
   private(set) var touchThreshold: Double = 20
   private var detector = TapDetector()
   let gestureInputs = PassthroughSubject<GameInput, Never>()
+  /// Every raw gesture event number the tag sends.
+  let rawEvents = PassthroughSubject<Int, Never>()
 
   init(_ tag: ConnectedTag) {
     self.underlyingTag = tag
@@ -180,35 +182,26 @@ class Tag: ObservableBase {
     events.removeAll()
   }
 
-  private func handleInference(_ event: Int) {
-    let title: String
-    var input: GameInput?
-    var recognized = true
+  /// Display name for a raw gesture event number. Numbers 1 and 8 are both treated as double tap
+  /// by default; the game lets you teach it which events are left, right and jump.
+  static func eventName(_ event: Int) -> String {
     switch event {
-    case 1, 8:
-      // The SDK numbers double tap 1, but this tag sends 8 for it.
-      title = "Double Tap"
-      input = .doubleTap
-    case 2:
-      title = "Brush In"
-      input = .brushIn
-    case 3:
-      title = "Brush Out"
-      input = .brushOut
-    case 7:
-      title = "Cover"
-      input = .cover
-    default:
-      if let gesture = JacquardSDK.Gesture(rawValue: event) {
-        title = gesture.name
-      } else {
-        title = "Unknown event \(event)"
-        recognized = false
-      }
+    case 1: return "Double Tap"
+    case 2: return "Brush In"
+    case 3: return "Brush Out"
+    case 7: return "Cover"
+    case 13: return "Brush Up"
+    case 14: return "Brush Down"
+    default: return "Event \(event)"
     }
+  }
+
+  private func handleInference(_ event: Int) {
+    let known = [1, 2, 3, 7, 13, 14].contains(event)
     addEvent(
-      TagEvent(kind: recognized ? .gesture : .unknown, title: title, detail: "event \(event)"))
-    if let input = input { gestureInputs.send(input) }
+      TagEvent(
+        kind: known ? .gesture : .unknown, title: Tag.eventName(event), detail: "event \(event)"))
+    rawEvents.send(event)
   }
 
   private func handleTouch(_ data: TouchData) {

@@ -256,6 +256,11 @@ final class GameModel: ObservableObject {
     lane = min(2, max(0, lane + delta))
   }
 
+  func steer(_ delta: Int, label: String) {
+    lastInput = label
+    move(delta)
+  }
+
   func jump() {
     if consumeForStart() { return }
     guard jumpLeft <= 0, jumpCooldown <= 0 else { return }
@@ -361,6 +366,11 @@ final class GameModel: ObservableObject {
   }
 }
 
+/// Steps of the "Teach gestures" flow.
+enum LearnStep {
+  case left, right, jump
+}
+
 struct GameView: View {
   @ObservedObject
   var tag: Tag
@@ -371,6 +381,24 @@ struct GameView: View {
   @State
   private var swapDirections = false
 
+  @AppStorage("gestureLeft")
+  private var gestureLeft = 2
+
+  @AppStorage("gestureRight")
+  private var gestureRight = 3
+
+  @AppStorage("gestureJump")
+  private var gestureJump = -1
+
+  @State
+  private var learning: LearnStep?
+
+  @State
+  private var learnNote = ""
+
+  @State
+  private var lastLearn = Date.distantPast
+
   @Environment(\.presentationMode)
   private var presentationMode
 
@@ -380,7 +408,19 @@ struct GameView: View {
         Text("Jacket Dodger").font(.title2).bold()
         Spacer()
         Toggle("Swap left/right", isOn: $swapDirections)
+        Button("Teach gestures") {
+          learning = .left
+          learnNote = ""
+          lastLearn = Date()
+        }
         Button("Close") { presentationMode.wrappedValue.dismiss() }
+      }
+
+      if let step = learning {
+        Text(learnPrompt(step)).font(.headline).foregroundColor(.orange)
+      }
+      if !learnNote.isEmpty {
+        Text(learnNote).font(.caption).foregroundColor(.secondary)
       }
 
       TimelineView(.animation) { _ in
@@ -402,18 +442,76 @@ struct GameView: View {
         }
       }
 
-      Text("Brush In = left   Brush Out = right   Double Tap = jump   Cover = shield")
+      Text(
+        "Left: \(Tag.eventName(gestureLeft))   Right: \(Tag.eventName(gestureRight))   "
+          + "Jump: \(gestureJump < 0 ? "Double Tap" : Tag.eventName(gestureJump))   Cover = shield"
+      )
         .font(.caption)
       Text("Keyboard: arrows, Space = jump, S = shield, Return = start")
         .font(.caption).foregroundColor(.secondary)
     }
     .padding()
     .frame(minWidth: 460, minHeight: 680)
+    .onReceive(tag.rawEvents) { event in
+      handleRaw(event)
+    }
     .onReceive(tag.gestureInputs) { input in
-      model.handle(input, swap: swapDirections)
+      if learning == nil { model.handle(input, swap: swapDirections) }
     }
     .onDisappear { model.stop() }
     .background(shortcuts)
+  }
+
+  private func learnPrompt(_ step: LearnStep) -> String {
+    switch step {
+    case .left: return "Do your LEFT gesture now"
+    case .right: return "Now your RIGHT gesture (the opposite direction)"
+    case .jump: return "Now your JUMP gesture (double tap)"
+    }
+  }
+
+  private func eventLabel(_ event: Int) -> String {
+    "\(Tag.eventName(event)) (event \(event))"
+  }
+
+  private func handleRaw(_ event: Int) {
+    if let step = learning {
+      guard event != 0, Date().timeIntervalSince(lastLearn) > 0.7 else { return }
+      lastLearn = Date()
+      switch step {
+      case .left:
+        gestureLeft = event
+        learnNote = "Left = \(eventLabel(event))"
+        learning = .right
+      case .right:
+        if event == gestureLeft {
+          learnNote = "That was the same as left. Try the opposite direction."
+          return
+        }
+        gestureRight = event
+        learnNote += "   Right = \(eventLabel(event))"
+        learning = .jump
+      case .jump:
+        if event == gestureLeft || event == gestureRight {
+          learnNote = "That matched left or right. Try your jump gesture again."
+          return
+        }
+        gestureJump = event
+        learnNote += "   Jump = \(eventLabel(event))   Saved."
+        learning = nil
+      }
+      return
+    }
+
+    if event == gestureLeft {
+      model.steer(swapDirections ? 1 : -1, label: Tag.eventName(event))
+    } else if event == gestureRight {
+      model.steer(swapDirections ? -1 : 1, label: Tag.eventName(event))
+    } else if event == gestureJump || (gestureJump < 0 && (event == 1 || event == 8)) {
+      model.handle(.doubleTap, swap: swapDirections)
+    } else if event == 7 {
+      model.handle(.cover, swap: swapDirections)
+    }
   }
 
   private var shortcuts: some View {

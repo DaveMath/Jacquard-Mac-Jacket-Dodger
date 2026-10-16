@@ -41,8 +41,9 @@ Written by @GGDM on Krystalize.AI local harness.
 ## What worked (observed on that one setup)
 
 - The Mac connects to the tag over Bluetooth, and the tag reports the jacket as attached. Its vendor and product IDs match the SDK's Levi's Trucker Jacket entry.
-- Brush In, Brush Out, Brush Up, Brush Down and Cover all work and arrive as the SDK documents.
-- **Double Tap arrives as raw event 8**, not event 1 as the SDK's `Gesture` enum expects. The SDK silently drops unknown events, so out of the box a double tap looks like nothing happened. The sample app here maps 8 to Double Tap. This mapping comes from observation, not documentation.
+- Brush In, Brush Out and Cover arrive under the event numbers the SDK documents (2, 3 and 7).
+- The author reports that Brush Up and Brush Down also work, but in the logs captured here the SDK's numbers for them (13 and 14) never appeared. They must arrive under other event numbers, so on this tag the SDK's gesture names may not match what the tag sends. This is why the game has a "Teach gestures" step.
+- **A double tap showed up as an event the SDK does not recognize**: event 8 in the author's testing, where the SDK expects event 1. The SDK silently drops unknown events, so out of the box a double tap looks like nothing happened. This comes from observation, not documentation, and event 1 also appeared in the logs.
 
 ## What did not work, and the workaround
 
@@ -68,7 +69,7 @@ Allow the Bluetooth prompt, wake the tag (tap it, or put it briefly on a charger
 
 - **Events list** (newest first) with raw event numbers and timestamps. Event numbers the SDK has no name for show up as "Unknown event N" instead of disappearing.
 - **Raw touch mode**: live bars for the 12 sensor lines, a threshold slider, and a software tap / double tap detector. The detector rules (touch under 0.3 s, little sideways movement, second tap within 0.5 s) are guesses and may need tuning.
-- **Jacket Dodger**, a three-lane dodger: Brush In/Out move left/right, Double Tap jumps, Cover raises a shield. (Brush Up and Brush Down work but the game does not use them.) Arrow keys, Space and S work from the keyboard. A toggle swaps left and right, because the physical direction of "in" is not documented.
+- **Jacket Dodger**, a three-lane dodger: left and right brushes change lanes, a double tap jumps, Cover raises a shield. Use **Teach gestures** once to record which of your tag's events mean left, right and jump (the choice is remembered). Without teaching, Brush In moves left, Brush Out moves right, and events 1 and 8 jump. Arrow keys, Space and S work from the keyboard. A toggle swaps left and right.
 
 ## Changes from upstream
 
