@@ -41,9 +41,8 @@ Written by @GGDM on Krystalize.AI local harness.
 ## What worked (observed on that one setup)
 
 - The Mac connects to the tag over Bluetooth, and the tag reports the jacket as attached. Its vendor and product IDs match the SDK's Levi's Trucker Jacket entry.
-- Brush In, Brush Out and Cover arrive as the SDK documents.
+- Brush In, Brush Out, Brush Up, Brush Down and Cover all work and arrive as the SDK documents.
 - **Double Tap arrives as raw event 8**, not event 1 as the SDK's `Gesture` enum expects. The SDK silently drops unknown events, so out of the box a double tap looks like nothing happened. The sample app here maps 8 to Double Tap. This mapping comes from observation, not documentation.
-- Brush Up and Brush Down were not observed during testing. That does not mean they are unsupported.
 
 ## What did not work, and the workaround
 
@@ -69,7 +68,7 @@ Allow the Bluetooth prompt, wake the tag (tap it, or put it briefly on a charger
 
 - **Events list** (newest first) with raw event numbers and timestamps. Event numbers the SDK has no name for show up as "Unknown event N" instead of disappearing.
 - **Raw touch mode**: live bars for the 12 sensor lines, a threshold slider, and a software tap / double tap detector. The detector rules (touch under 0.3 s, little sideways movement, second tap within 0.5 s) are guesses and may need tuning.
-- **Jacket Dodger**, a three-lane dodger: Brush In/Out move left/right, Double Tap jumps, Cover raises a shield. Arrow keys, Space and S work from the keyboard. A toggle swaps left and right, because the physical direction of "in" is not documented.
+- **Jacket Dodger**, a three-lane dodger: Brush In/Out move left/right, Double Tap jumps, Cover raises a shield. (Brush Up and Brush Down work but the game does not use them.) Arrow keys, Space and S work from the keyboard. A toggle swaps left and right, because the physical direction of "in" is not documented.
 
 ## Changes from upstream
 
@@ -86,3 +85,5 @@ The original SDK README is kept as [README.SDK.md](README.SDK.md).
 Apache License 2.0, as in the original; see [LICENSE](LICENSE). Copyright 2021 Google LLC for the original SDK; modifications are provided under the same license.
 
 This is an independent hobby project. It is not affiliated with or endorsed by Google, Levi Strauss & Co. or adidas. Jacquard, Levi's, adidas and GMR are trademarks of their respective owners.
+
+Written by @GGDM on Krystalize.AI local harness.
