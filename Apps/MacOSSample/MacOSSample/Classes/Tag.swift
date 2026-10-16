@@ -182,11 +182,18 @@ class Tag: ObservableBase {
     events.removeAll()
   }
 
-  /// Display name for a raw gesture event number. Numbers 1 and 8 are both treated as double tap
-  /// by default; the game lets you teach it which events are left, right and jump.
+  /// Display name for a raw gesture event number. After "Teach gestures" in the game, the
+  /// taught left, right and jump events use those names; otherwise the SDK's names apply, with
+  /// events 1 and 8 shown as Double Tap (8 is what this tag sent for a double tap in testing).
   static func eventName(_ event: Int) -> String {
+    let defaults = UserDefaults.standard
+    if defaults.bool(forKey: "gesturesTaught") {
+      if event == defaults.integer(forKey: "gestureLeft") { return "Brush Left" }
+      if event == defaults.integer(forKey: "gestureRight") { return "Brush Right" }
+      if event == defaults.integer(forKey: "gestureJump") { return "Double Tap" }
+    }
     switch event {
-    case 1: return "Double Tap"
+    case 1, 8: return "Double Tap"
     case 2: return "Brush In"
     case 3: return "Brush Out"
     case 7: return "Cover"
@@ -197,10 +204,11 @@ class Tag: ObservableBase {
   }
 
   private func handleInference(_ event: Int) {
-    let known = [1, 2, 3, 7, 13, 14].contains(event)
+    let name = Tag.eventName(event)
     addEvent(
       TagEvent(
-        kind: known ? .gesture : .unknown, title: Tag.eventName(event), detail: "event \(event)"))
+        kind: name.hasPrefix("Event ") ? .unknown : .gesture, title: name,
+        detail: "event \(event)"))
     rawEvents.send(event)
   }
 

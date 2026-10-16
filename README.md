@@ -69,7 +69,7 @@ Allow the Bluetooth prompt, wake the tag (tap it, or put it briefly on a charger
 
 - **Events list** (newest first) with raw event numbers and timestamps. Event numbers the SDK has no name for show up as "Unknown event N" instead of disappearing.
 - **Raw touch mode**: live bars for the 12 sensor lines, a threshold slider, and a software tap / double tap detector. The detector rules (touch under 0.3 s, little sideways movement, second tap within 0.5 s) are guesses and may need tuning.
-- **Jacket Dodger**, a three-lane dodger: left and right brushes change lanes, a double tap jumps, Cover raises a shield. Use **Teach gestures** once to record which of your tag's events mean left, right and jump (the choice is remembered). Without teaching, Brush In moves left, Brush Out moves right, and events 1 and 8 jump. Arrow keys, Space and S work from the keyboard. A toggle swaps left and right.
+- **Jacket Dodger**, a three-lane dodger: left and right brushes change lanes, a double tap jumps, Cover raises a shield. Use **Teach gestures** once to record which of your tag's events mean left, right and jump (the choice is remembered). The events list then uses those names (Brush Left, Brush Right, Double Tap). Without teaching, Brush In moves left, Brush Out moves right, and events 1 and 8 jump. Arrow keys, Space and S work from the keyboard. A toggle swaps left and right.
 
 ## Changes from upstream
 

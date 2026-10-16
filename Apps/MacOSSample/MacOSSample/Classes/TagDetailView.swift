@@ -390,6 +390,9 @@ struct GameView: View {
   @AppStorage("gestureJump")
   private var gestureJump = -1
 
+  @AppStorage("gesturesTaught")
+  private var gesturesTaught = false
+
   @State
   private var learning: LearnStep?
 
@@ -411,6 +414,7 @@ struct GameView: View {
         Button("Teach gestures") {
           learning = .left
           learnNote = ""
+          gesturesTaught = false
           lastLearn = Date()
         }
         Button("Close") { presentationMode.wrappedValue.dismiss() }
@@ -498,6 +502,7 @@ struct GameView: View {
         }
         gestureJump = event
         learnNote += "   Jump = \(eventLabel(event))   Saved."
+        gesturesTaught = true
         learning = nil
       }
       return
